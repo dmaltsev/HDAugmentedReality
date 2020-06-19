@@ -80,5 +80,8 @@ open class ARAnnotationView: UIView
         
     }
     
+    open func setActive(_ active: Bool) {
+        
+    }
 
 }

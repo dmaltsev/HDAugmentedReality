@@ -348,6 +348,9 @@ open class ARPresenter: UIView
         let pitchYOffset = CGFloat(arStatus.pitch * arStatus.vPixelsPerDegree)
         let annotationViews = needsRelayout ? self.annotationViews : self.visibleAnnotationViews
         
+        var nearestAnnotationView: ARAnnotationView? = nil
+        var minDistance: CGFloat = CGFloat.greatestFiniteMagnitude
+        
         for annotationView in annotationViews
         {
             guard let annotation = annotationView.annotation else { continue }
@@ -358,13 +361,28 @@ open class ARPresenter: UIView
                 let y = self.yPositionForAnnotationView(annotationView, arStatus: arStatus)
                 annotationView.arPosition = CGPoint(x: x, y: y)
             }
-            let headingXOffset = CGFloat(ARMath.deltaAngle(annotation.azimuth, arStatus.heading)) * CGFloat(arStatus.hPixelsPerDegree)
-
+            let headingXOffset = CGFloat(deltaAngle(annotation.azimuth, arStatus.heading)) * CGFloat(arStatus.hPixelsPerDegree)
+            
             let x: CGFloat = annotationView.arPosition.x + headingXOffset
             let y: CGFloat = annotationView.arPosition.y + pitchYOffset + annotationView.arPositionOffset.y
             
             // Final position of annotation
             annotationView.frame = CGRect(x: x, y: y, width: annotationView.bounds.size.width, height: annotationView.bounds.size.height)
+            
+            if let superCenterX = annotationView.superview?.center.x, abs(superCenterX - (x + annotationView.bounds.size.width / 2)) < 30 {
+                let diff = abs(superCenterX - (x + annotationView.bounds.size.width / 2))
+                if minDistance > diff {
+                    minDistance = diff
+                    nearestAnnotationView = annotationView
+                }
+            }
+            
+            annotationView.setActive(false)
+        }
+        nearestAnnotationView?.setActive(true)
+        
+        if let nearestAnnotationView = nearestAnnotationView {
+            self.bringSubview(toFront: nearestAnnotationView)
         }
     }
     
